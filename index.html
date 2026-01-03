@@ -48,6 +48,14 @@
                         <button id="clear-gestures-btn" class="btn-gesture">🧹 Clear All</button>
                         <button id="train-model-btn" class="btn-gesture">🚀 Train Model</button>
                     </div>
+                    <!-- Training Progress Animation -->
+                    <div id="training-progress-container" class="training-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                        <div id="training-status" class="training-status">Initializing training...</div>
+                        <div class="loading-spinner"></div>
+                    </div>
                 </div>
             </div>
 
@@ -74,7 +82,7 @@
 
                 <div class="text-output">
                     <h3>Detected Text:</h3>
-                    <div id="detected-text" class="text-display"></div>
+                    <textarea id="detected-text" class="text-display editable-textarea" contenteditable="true" placeholder="Detected text will appear here... "></textarea>
                     <div id="current-gesture" class="current-gesture">
                         <span id="gesture-name">Ready for custom gestures</span>
                         <span id="confidence"></span>

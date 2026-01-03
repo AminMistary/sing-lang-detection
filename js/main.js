@@ -1,4 +1,3 @@
-// Fixed Main Application - Debugging Gesture Recording & Text Issues
 class SignLanguageApp {
     constructor() {
         this.isRunning = false;
@@ -6,7 +5,7 @@ class SignLanguageApp {
         this.currentGesture = null;
         this.gestureBuffer = [];
         this.lastGestureTime = 0;
-        this.gestureTimeout = 2000; // 2 seconds
+        this.gestureTimeout = 1000; // 1 second - allow faster repetition
         this.fpsCounter = 0;
         this.lastFpsTime = 0;
         this.isRecordingGesture = false;
@@ -403,7 +402,7 @@ class SignLanguageApp {
         }
     }
 
-    // Train the ML model
+    // Train the ML model with real-time progress animation
     async trainModel() {
         if (this.gestureRecognizer.isTraining) {
             alert('Training already in progress!');
@@ -427,37 +426,62 @@ class SignLanguageApp {
             return;
         }
 
-        const trainingProgress = document.getElementById('training-progress');
-        if (trainingProgress) {
-            trainingProgress.textContent = 'Training model...';
-        } else {
-            this.updateStatus('Training model...');
-        }
+        // Show training progress container
+        const progressContainer = document.getElementById('training-progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const trainingStatus = document.getElementById('training-status');
+        const trainBtn = document.getElementById('train-model-btn');
+
+        progressContainer.style.display = 'block';
+        trainBtn.disabled = true;
+        trainBtn.textContent = '🚀 Training...';
+
+        this.updateStatus('Training model...');
 
         try {
             await this.gestureRecognizer.trainModel((epoch, total, acc, valAcc) => {
+                const progressPercent = (epoch / total) * 100;
                 const progress = `Epoch ${epoch}/${total} | Acc: ${(acc*100).toFixed(1)}% | Val: ${(valAcc*100).toFixed(1)}%`;
-                if (trainingProgress) {
-                    trainingProgress.textContent = progress;
-                } else {
-                    this.updateStatus(progress);
-                }
+
+                // Update progress bar
+                progressFill.style.width = `${progressPercent}%`;
+
+                // Update status text
+                trainingStatus.textContent = progress;
+
+                // Update main status
+                this.updateStatus(progress);
             });
 
-            if (trainingProgress) {
-                trainingProgress.textContent = 'Training complete!';
-                setTimeout(() => {
-                    trainingProgress.textContent = '';
-                }, 3000);
-            }
+            // Training complete
+            progressFill.style.width = '100%';
+            trainingStatus.textContent = '✅ Training Complete!';
             this.updateStatus('✅ Model trained and ready for recognition!');
+
+            // Hide progress after 3 seconds
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+                progressFill.style.width = '0%';
+                trainBtn.disabled = false;
+                trainBtn.textContent = '🚀 Train Model';
+            }, 3000);
+
             alert('Model trained successfully! Now try recognizing gestures.');
         } catch (error) {
             console.error('Training failed:', error);
-            if (trainingProgress) {
-                trainingProgress.textContent = 'Training failed - Check console';
-            }
+            trainingStatus.textContent = '❌ Training Failed';
+            progressFill.style.background = '#f44336';
             this.updateStatus('Training failed');
+
+            // Hide progress after 5 seconds on error
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+                progressFill.style.width = '0%';
+                progressFill.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
+                trainBtn.disabled = false;
+                trainBtn.textContent = '🚀 Train Model';
+            }, 5000);
+
             alert(`Training failed: ${error.message}`);
         }
     }
@@ -588,8 +612,7 @@ class SignLanguageApp {
         if (this.gestureBuffer.length >= 15) { // More samples for stability
             const stableGesture = this.getStableGesture();
 
-            if (stableGesture && 
-                stableGesture !== this.currentGesture &&
+            if (stableGesture &&
                 currentTime - this.lastGestureTime > this.gestureTimeout) {
 
                 this.addGestureToText(stableGesture);
@@ -659,7 +682,7 @@ class SignLanguageApp {
 
     updateDetectedText() {
         const textElement = document.getElementById('detected-text');
-        textElement.textContent = this.detectedText;
+        textElement.value = this.detectedText;
 
         // Scroll to show latest text if overflowing
         textElement.scrollTop = textElement.scrollHeight;
