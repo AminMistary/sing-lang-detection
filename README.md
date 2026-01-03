@@ -3,7 +3,6 @@
 <div align="center">
   <img src="https://img.shields.io/badge/Status-Active-brightgreen" alt="Status">
   <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
   <br>
   <img src="https://img.shields.io/badge/TensorFlow.js-4.0.0-orange" alt="TensorFlow.js">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-red" alt="MediaPipe">
@@ -15,16 +14,9 @@
 <div style="display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0;">
   <span style="background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">🎯 Real-time Gesture Recognition</span>
   <span style="background: linear-gradient(45deg, #f093fb, #f5576c); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">📝 Editable Text Output</span>
-  <span style="background: linear-gradient(45deg, #4facfe, #00f2fe); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">🚀 Dynamic Training Animation</span>
   <span style="background: linear-gradient(45deg, #43e97b, #38f9d7); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">🔊 Text-to-Speech</span>
   <span style="background: linear-gradient(45deg, #fa709a, #fee140); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">🎨 Custom Gesture Creation</span>
   <span style="background: linear-gradient(45deg, #a8edea, #fed6e3); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">📊 Live Performance Metrics</span>
-</div>
-
-## 🎬 Demo
-
-<div align="center">
-  <img src="demo.gif" alt="Sign Language Recognition Demo" width="600" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
 </div>
 
 ## 🚀 Quick Start
@@ -167,9 +159,6 @@
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -203,10 +192,13 @@ If you have any questions or issues:
   </div>
 </div>
 
-<style>
-@keyframes bounce {
+<style>@keyframes bounce {
   0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
   40% { transform: translateY(-10px); }
   60% { transform: translateY(-5px); }
+}
+.bounce {
+  display: inline-block;
+  animation: bounce 2s infinite;
 }
 </style>
