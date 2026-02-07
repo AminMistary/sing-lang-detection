@@ -5,7 +5,7 @@ class SignLanguageApp {
         this.currentGesture = null;
         this.gestureBuffer = [];
         this.lastGestureTime = 0;
-        this.gestureTimeout = 1000; // 1 second - allow faster repetition
+        this.gestureTimeout = APP_CONFIG.DETECTION.GESTURE_TIMEOUT;
         this.fpsCounter = 0;
         this.lastFpsTime = 0;
         this.isRecordingGesture = false;
@@ -66,6 +66,59 @@ class SignLanguageApp {
         if (trainModelBtn) {
             trainModelBtn.addEventListener('click', () => this.trainModel());
         }
+
+        // Export/Import buttons
+        const exportBtn = document.getElementById('export-btn');
+        const importBtn = document.getElementById('import-btn');
+        const importFile = document.getElementById('import-file');
+
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportDataset());
+        }
+
+        if (importBtn && importFile) {
+            importBtn.addEventListener('click', () => importFile.click());
+            importFile.addEventListener('change', (e) => this.importDataset(e));
+        }
+    }
+
+    // New method for exporting dataset
+    exportDataset() {
+        const data = this.gestureRecognizer.exportDataset();
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `gesture_data_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        console.log('💾 Dataset exported');
+    }
+
+    // New method for importing dataset
+    importDataset(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                this.gestureRecognizer.importDataset(e.target.result);
+                this.updateGesturesList();
+                this.updateStatus('✅ Dataset imported. Please train the model.');
+                alert('Dataset imported successfully! You need to retrain the model now.');
+            } catch (error) {
+                console.error('Import failed:', error);
+                alert('Failed to import dataset: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+        // Reset file input
+        event.target.value = '';
     }
 
     setupUI() {
@@ -293,7 +346,7 @@ class SignLanguageApp {
                     const pip = landmarks[fingerPIPs[fingerIndex]];
                     const mcp = landmarks[fingerMCPs[fingerIndex]];
 
-                    if (fingerIndex === 0) { 
+                    if (fingerIndex === 0) {
                         // Thumb - check horizontal distance
                         const horizontalDist = Math.abs(tip.x - mcp.x);
                         const verticalDist = Math.abs(tip.y - mcp.y);
@@ -303,7 +356,7 @@ class SignLanguageApp {
                         } else {
                             curlCount++;
                         }
-                    } else { 
+                    } else {
                         // Other fingers - check if tip is above PIP and MCP
                         if (tip.y < pip.y && tip.y < mcp.y) {
                             extendedCount++;
@@ -319,7 +372,7 @@ class SignLanguageApp {
             const extendedRatio = extendedCount / totalSamples;
             const fingerEnum = [fp.Finger.Thumb, fp.Finger.Index, fp.Finger.Middle, fp.Finger.Ring, fp.Finger.Pinky][fingerIndex];
 
-            console.log(`Finger ${fingerIndex}: ${extendedCount}/${totalSamples} extended (${(extendedRatio*100).toFixed(1)}%)`);
+            console.log(`Finger ${fingerIndex}: ${extendedCount}/${totalSamples} extended (${(extendedRatio * 100).toFixed(1)}%)`);
 
             if (extendedRatio > 0.75) {
                 // Finger is clearly extended
@@ -426,63 +479,55 @@ class SignLanguageApp {
             return;
         }
 
-        // Show training progress container
-        const progressContainer = document.getElementById('training-progress-container');
+        // Show training overlay
+        const overlay = document.getElementById('training-overlay');
         const progressFill = document.getElementById('progress-fill');
         const trainingStatus = document.getElementById('training-status');
         const trainBtn = document.getElementById('train-model-btn');
 
-        progressContainer.style.display = 'block';
+        overlay.style.display = 'flex';
         trainBtn.disabled = true;
-        trainBtn.textContent = '🚀 Training...';
 
         this.updateStatus('Training model...');
 
         try {
             await this.gestureRecognizer.trainModel((epoch, total, acc, valAcc) => {
                 const progressPercent = (epoch / total) * 100;
-                const progress = `Epoch ${epoch}/${total} | Acc: ${(acc*100).toFixed(1)}% | Val: ${(valAcc*100).toFixed(1)}%`;
+                const progress = `Epoch ${epoch}/${total} | Acc: ${(acc * 100).toFixed(1)}% | Val: ${(valAcc * 100).toFixed(1)}%`;
 
                 // Update progress bar
                 progressFill.style.width = `${progressPercent}%`;
 
                 // Update status text
                 trainingStatus.textContent = progress;
-
-                // Update main status
-                this.updateStatus(progress);
             });
 
             // Training complete
             progressFill.style.width = '100%';
-            trainingStatus.textContent = '✅ Training Complete!';
-            this.updateStatus('✅ Model trained and ready for recognition!');
+            trainingStatus.innerText = '✅ Training Complete!';
 
-            // Hide progress after 3 seconds
+            // Add a small delay to show completion
             setTimeout(() => {
-                progressContainer.style.display = 'none';
+                overlay.style.display = 'none';
                 progressFill.style.width = '0%';
                 trainBtn.disabled = false;
-                trainBtn.textContent = '🚀 Train Model';
-            }, 3000);
+                this.updateStatus('✅ Model trained and ready!');
+                alert('Model trained successfully! Now try recognizing gestures.');
+            }, 1500);
 
-            alert('Model trained successfully! Now try recognizing gestures.');
         } catch (error) {
             console.error('Training failed:', error);
             trainingStatus.textContent = '❌ Training Failed';
             progressFill.style.background = '#f44336';
-            this.updateStatus('Training failed');
 
-            // Hide progress after 5 seconds on error
             setTimeout(() => {
-                progressContainer.style.display = 'none';
+                overlay.style.display = 'none';
                 progressFill.style.width = '0%';
                 progressFill.style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
                 trainBtn.disabled = false;
-                trainBtn.textContent = '🚀 Train Model';
-            }, 5000);
-
-            alert(`Training failed: ${error.message}`);
+                this.updateStatus('Training failed');
+                alert(`Training failed: ${error.message}`);
+            }, 3000);
         }
     }
 
@@ -572,7 +617,11 @@ class SignLanguageApp {
             if (!this.isRecordingGesture) {
                 const gesture = this.gestureRecognizer.recognizeGesture(landmarks);
 
-                if (gesture && gesture.name !== 'no_model_trained' && gesture.name !== 'prediction_error' && gesture.confidence > 0.5) {
+                if (gesture &&
+                    gesture.name !== 'no_model_trained' &&
+                    gesture.name !== 'prediction_error' &&
+                    gesture.name !== 'undefined' &&
+                    gesture.confidence > APP_CONFIG.DETECTION.MIN_CONFIDENCE) {
                     this.processGesture(gesture);
                 } else {
                     this.updateCurrentGesture('Train model first or low confidence');
@@ -642,16 +691,23 @@ class SignLanguageApp {
             }
         }
 
-        // Require at least 80% consistency for better stability
-        return maxCount >= this.gestureBuffer.length * 0.8 ? mostCommon : null;
+        // Require consistency based on config
+        return maxCount >= this.gestureBuffer.length * APP_CONFIG.DETECTION.STABILITY_THRESHOLD ? mostCommon : null;
     }
 
     // FIXED - Text accumulation
     addGestureToText(gestureName) {
+        if (!gestureName || gestureName === 'undefined' || gestureName === 'null') {
+            console.warn('⚠️ Attempted to add invalid gesture text:', gestureName);
+            return;
+        }
+
         const textToAdd = this.gestureToText(gestureName);
 
-        if (textToAdd) {
-            this.detectedText += textToAdd;
+        if (textToAdd && textToAdd.trim() !== 'undefined') {
+            // Get current text from DOM to respect user edits
+            const currentText = document.getElementById('detected-text').value || '';
+            this.detectedText = currentText + textToAdd;
             this.updateDetectedText();
             document.getElementById('speak-btn').disabled = false;
 
@@ -669,7 +725,9 @@ class SignLanguageApp {
 
     // FIXED - Speech functionality  
     speakText() {
-        const textToSpeak = this.detectedText.trim();
+        // Get text directly from DOM to support user edits
+        const textElement = document.getElementById('detected-text');
+        const textToSpeak = (textElement.value || textElement.textContent || '').trim();
 
         if (!textToSpeak) {
             alert('No text to speak! Detect some gestures first.');
@@ -691,7 +749,7 @@ class SignLanguageApp {
     updateCurrentGesture(name, confidence = null) {
         document.getElementById('gesture-name').textContent = name;
         if (confidence !== null) {
-            document.getElementById('confidence').textContent = 
+            document.getElementById('confidence').textContent =
                 `(${(confidence * 100).toFixed(1)}%)`;
         } else {
             document.getElementById('confidence').textContent = '';

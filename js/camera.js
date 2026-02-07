@@ -33,9 +33,9 @@ class CameraManager {
             // Request camera access
             const constraints = {
                 video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: 'user' // Front camera
+                    width: { ideal: APP_CONFIG.CAMERA.WIDTH },
+                    height: { ideal: APP_CONFIG.CAMERA.HEIGHT },
+                    facingMode: APP_CONFIG.CAMERA.FACING_MODE
                 }
             };
 
@@ -45,11 +45,15 @@ class CameraManager {
             this.videoElement.srcObject = this.stream;
 
             // Wait for video to be ready
-            await new Promise((resolve) => {
-                this.videoElement.onloadedmetadata = () => {
-                    resolve();
-                };
-            });
+            if (this.videoElement.readyState >= 1) { // HAVE_METADATA
+                // Already ready
+            } else {
+                await new Promise((resolve) => {
+                    this.videoElement.onloadedmetadata = () => {
+                        resolve();
+                    };
+                });
+            }
 
             await this.videoElement.play();
 

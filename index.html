@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Sign Language Recognition</title>
 
     <!-- FIXED CSS LINK -->
-    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/training-overlay.css">
 
     <!-- MediaPipe CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <!-- TensorFlow.js CDN -->
@@ -20,12 +24,13 @@
     <!-- Fingerpose for gesture recognition -->
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.1.0/dist/fingerpose.min.js"></script>
 </head>
+
 <body>
     <div class="container">
         <header>
             <h1>🤟 AI Sign Language Recognition</h1>
             <p>Custom Gesture Training System</p>
-           
+
         </header>
 
         <main>
@@ -47,15 +52,32 @@
                         <button id="list-gestures-btn" class="btn-gesture">📋 List Gestures</button>
                         <button id="clear-gestures-btn" class="btn-gesture">🧹 Clear All</button>
                         <button id="train-model-btn" class="btn-gesture">🚀 Train Model</button>
+                        <!-- Export/Import Buttons -->
+                        <button id="export-btn" class="btn-gesture" style="background-color: #2e86de;">💾 Export
+                            Data</button>
+                        <button id="import-btn" class="btn-gesture" style="background-color: #2e86de;">📂 Import
+                            Data</button>
+                        <input type="file" id="import-file" accept=".json" style="display: none;">
                     </div>
-                    <!-- Training Progress Animation -->
-                    <div id="training-progress-container" class="training-progress" style="display: none;">
-                        <div class="progress-bar">
-                            <div id="progress-fill" class="progress-fill"></div>
-                        </div>
-                        <div id="training-status" class="training-status">Initializing training...</div>
-                        <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <!-- Training Overlay -->
+            <div id="training-overlay" class="training-overlay" style="display: none;">
+                <div class="training-content">
+                    <div class="neuron-animation">
+                        <div class="neuron n1"></div>
+                        <div class="neuron n2"></div>
+                        <div class="neuron n3"></div>
+                        <div class="connection c1"></div>
+                        <div class="connection c2"></div>
                     </div>
+                    <h2>🧠 Training Neural Network</h2>
+                    <p id="training-status">Initializing...</p>
+                    <div class="progress-container-large">
+                        <div id="progress-fill" class="progress-fill-large"></div>
+                    </div>
+                    <p class="training-tips">Please wait while the model learns your gestures...</p>
                 </div>
             </div>
 
@@ -82,7 +104,8 @@
 
                 <div class="text-output">
                     <h3>Detected Text:</h3>
-                    <textarea id="detected-text" class="text-display editable-textarea" contenteditable="true" placeholder="Detected text will appear here... "></textarea>
+                    <textarea id="detected-text" class="text-display editable-textarea" contenteditable="true"
+                        placeholder="Detected text will appear here... "></textarea>
                     <div id="current-gesture" class="current-gesture">
                         <span id="gesture-name">Ready for custom gestures</span>
                         <span id="confidence"></span>
@@ -110,6 +133,7 @@
     </div>
 
     <!-- Load JavaScript modules in correct order -->
+    <script src="./js/config.js"></script>
     <script src="./js/textToSpeech.js"></script>
     <script src="./js/handDetection.js"></script>
     <script src="./js/gestureRecognition.js"></script>
@@ -119,7 +143,7 @@
     <!-- CSS Status Check -->
     <script>
         // Check if CSS loaded properly
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const testElement = document.createElement('div');
             testElement.style.display = 'none';
             testElement.className = 'container';
@@ -151,4 +175,5 @@
         });
     </script>
 </body>
+
 </html>

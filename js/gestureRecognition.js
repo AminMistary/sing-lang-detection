@@ -3,6 +3,7 @@ class GestureRecognizer {
     constructor() {
         this.model = null;
         this.dataset = new Map(); // gestureName -> array of flattened landmarks
+        this.centroids = {}; // gestureName -> average flattened landmark vector
         this.gestureLabels = []; // array of gesture names for class indices
         this.isTrained = false;
         this.isTraining = false;
@@ -126,22 +127,32 @@ class GestureRecognizer {
 
             // Build model
             this.model = tf.sequential();
-            this.model.add(tf.layers.dense({ inputShape: [63], units: 128, activation: 'relu' }));
-            this.model.add(tf.layers.dropout({ rate: 0.2 }));
-            this.model.add(tf.layers.dense({ units: 64, activation: 'relu' }));
-            this.model.add(tf.layers.dropout({ rate: 0.2 }));
-            this.model.add(tf.layers.dense({ units: this.gestureLabels.length, activation: 'softmax' }));
+            this.model.add(tf.layers.dense({
+                inputShape: [63],
+                units: APP_CONFIG.MODEL.HIDDEN_UNITS_1,
+                activation: 'relu'
+            }));
+            this.model.add(tf.layers.dropout({ rate: APP_CONFIG.MODEL.DROPOUT_RATE }));
+            this.model.add(tf.layers.dense({
+                units: APP_CONFIG.MODEL.HIDDEN_UNITS_2,
+                activation: 'relu'
+            }));
+            this.model.add(tf.layers.dropout({ rate: APP_CONFIG.MODEL.DROPOUT_RATE }));
+            this.model.add(tf.layers.dense({
+                units: this.gestureLabels.length,
+                activation: 'softmax'
+            }));
 
             this.model.compile({
-                optimizer: tf.train.adam(0.001),
+                optimizer: tf.train.adam(APP_CONFIG.MODEL.LEARNING_RATE),
                 loss: 'categoricalCrossentropy',
                 metrics: ['accuracy']
             });
 
             // Train model
             const history = await this.model.fit(trainXs, trainYs, {
-                epochs: 50,
-                batchSize: 32,
+                epochs: APP_CONFIG.MODEL.EPOCHS,
+                batchSize: APP_CONFIG.MODEL.BATCH_SIZE,
                 validationData: [valXs, valYs],
                 callbacks: {
                     onEpochEnd: (epoch, logs) => {
@@ -154,6 +165,7 @@ class GestureRecognizer {
             });
 
             this.isTrained = true;
+            this.calculateCentroids(); // Calculate centroids for outlier detection
             console.log('✅ Model trained successfully!');
 
             // Save model
@@ -175,6 +187,41 @@ class GestureRecognizer {
         } finally {
             this.isTraining = false;
         }
+    }
+
+    // Calculate average embedding (centroid) for each gesture
+    calculateCentroids() {
+        console.log('POI: Calculating centroids for outlier rejection...');
+        this.centroids = {};
+
+        this.dataset.forEach((samples, gestureName) => {
+            if (samples.length === 0) return;
+
+            // Initialize sum vector
+            const sum = new Array(samples[0].length).fill(0);
+
+            // Sum all samples
+            samples.forEach(sample => {
+                for (let i = 0; i < sample.length; i++) {
+                    sum[i] += sample[i];
+                }
+            });
+
+            // Average
+            this.centroids[gestureName] = sum.map(val => val / samples.length);
+        });
+
+        console.log('✅ Centroids calculated for:', Object.keys(this.centroids));
+    }
+
+    // Calculate Euclidean distance between two vectors
+    calculateDistance(v1, v2) {
+        if (!v1 || !v2 || v1.length !== v2.length) return Infinity;
+        let sum = 0;
+        for (let i = 0; i < v1.length; i++) {
+            sum += Math.pow(v1[i] - v2[i], 2);
+        }
+        return Math.sqrt(sum);
     }
 
     // Recognize gesture using ML model
@@ -209,6 +256,17 @@ class GestureRecognizer {
 
             const gestureName = this.gestureLabels[predictedIndex];
 
+            // Distance-based outlier rejection
+            if (this.centroids[gestureName]) {
+                const distance = this.calculateDistance(flattened, this.centroids[gestureName]);
+                // console.log(`Distance to ${gestureName}: ${distance.toFixed(2)}`); // Debug
+
+                if (distance > APP_CONFIG.DETECTION.MAX_DISTANCE_THRESHOLD) {
+                    // console.warn(`Outlier detected! Distance ${distance.toFixed(2)} > ${APP_CONFIG.DETECTION.MAX_DISTANCE_THRESHOLD}`);
+                    return { name: 'uncertain', confidence: 0.0, distance: distance };
+                }
+            }
+
             return {
                 name: gestureName,
                 confidence: confidence
@@ -226,7 +284,10 @@ class GestureRecognizer {
 
         try {
             await this.model.save('localstorage://gesture-model');
-            console.log('💾 Model saved to localStorage');
+            // Save centroids and labels for outlier rejection persistence
+            localStorage.setItem('gesture_centroids', JSON.stringify(this.centroids));
+            localStorage.setItem('gesture_labels', JSON.stringify(this.gestureLabels));
+            console.log('💾 Model and centroids saved to localStorage');
         } catch (error) {
             console.error('Failed to save model:', error);
         }
@@ -237,7 +298,18 @@ class GestureRecognizer {
         try {
             this.model = await tf.loadLayersModel('localstorage://gesture-model');
             this.isTrained = true;
-            console.log('📂 Model loaded from localStorage');
+
+            // Load centroids and labels
+            const savedCentroids = localStorage.getItem('gesture_centroids');
+            const savedLabels = localStorage.getItem('gesture_labels');
+
+            if (savedCentroids && savedLabels) {
+                this.centroids = JSON.parse(savedCentroids);
+                this.gestureLabels = JSON.parse(savedLabels);
+                console.log('📂 Model, centroids, and labels loaded from localStorage');
+            } else {
+                console.log('⚠️ Model loaded but missing centroids/labels. Retraining recommended.');
+            }
         } catch (error) {
             console.log('No saved model found, starting fresh');
         }

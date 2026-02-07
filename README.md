@@ -19,6 +19,14 @@
   <span style="background: linear-gradient(45deg, #a8edea, #fed6e3); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">📊 Live Performance Metrics</span>
 </div>
 
+## 🌟 Recent Upgrades (v1.1)
+
+- **💾 Data Persistence**: Export/Import your trained gesture datasets.
+- **🛡️ Improved Accuracy**: Smart outlier rejection ignores undefined gestures.
+- **🧠 Visual Training**: Full-screen neural network visualization during training.
+- **⏱️ Better Timing**: Adjusted gesture timeout (4s) for more natural typing.
+- **⚡ Performance Config**: Centralized configuration for easy tweaking.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -30,7 +38,7 @@
 1. **Clone the repository**
    ```bash
    git clone https://github.com/your-username/sign-language-recognition.git
-   cd sign-language-recognition
+   cd sing-lang-detection
    ```
 
 2. **Open in browser**
@@ -70,9 +78,12 @@
 
 ```
 ├── index.html          # Main application interface
-├── styles.css          # Styling and animations
+├── css/
+│   ├── styles.css          # Main styling
+│   └── training-overlay.css # Overlay animations
 ├── js/
 │   ├── main.js         # Application logic and coordination
+│   ├── config.js       # Centralized configuration
 │   ├── camera.js       # Camera management
 │   ├── handDetection.js # MediaPipe hand tracking
 │   ├── gestureRecognition.js # ML gesture recognition
@@ -202,3 +213,17 @@ If you have any questions or issues:
   animation: bounce 2s infinite;
 }
 </style>
+## 🔧 Troubleshooting & Tips
+
+### Reducing False Positives
+If the app detects gestures when you aren't making them:
+1.  **Train a "Neutral" Gesture**: Record your hand just resting or in a neutral position and label it "Neutral". This gives the model a "default" state to go to.
+2.  **Adjust Thresholds**: in `js/config.js`, you can increase `MIN_CONFIDENCE` (e.g. to 0.9) or decrease `MAX_DISTANCE_THRESHOLD`.
+
+### Improving Accuracy
+- Ensure good lighting.
+- Keep your hand within the frame.
+- Train with different angles and distances for each gesture.
+
+### Outlier Rejection
+The app now calculates the "center" of your trained gestures. If a new hand shape is too far mathematically from any known gesture, it will be rejected as "uncertain". This prevents random hand movements from typing words.
